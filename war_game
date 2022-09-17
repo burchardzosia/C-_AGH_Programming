@@ -1,0 +1,255 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <limits.h>
+
+#define CBUFF_SIZE  52
+int graczA[CBUFF_SIZE], graczB[CBUFF_SIZE];
+int outA=0, lenA=0,outB=0,lenB=0;
+
+void print_deck(short player) {
+
+    if (player==0){
+        for(int i=outA;i<lenA+outA;i++)
+            printf("%d ", graczA[i%CBUFF_SIZE]);
+    }
+    else{
+        for(int i=outB;i<lenB+outB;i++)
+            printf("%d ", graczB[i%CBUFF_SIZE]);
+    }
+    printf("\n");
+}
+
+
+int rand_from_interval(int a, int b) {
+    if (a > b) {
+        return INT_MIN;
+    }
+    if (b - a > RAND_MAX) {
+        return INT_MAX;
+    }
+    if (a == b) {
+        return a;
+    }
+    return rand()%(b - a + 1) + a;
+}
+
+void rand_permutation(int n, int tab[]) {
+    if (n > 0 && n <= 100) {
+        for (int i = 0; i < n; ++i) {
+            tab[i] = i;
+        }
+        for (int i = 0; i < n - 1; ++i) {
+            int k = rand_from_interval(i, n - 1);
+            int tmp = tab[i];
+            tab[i] = tab[k];
+            tab[k] = tmp;
+        }
+
+    }
+}
+
+double add_card(int card_nr, short player) {
+    if(lenA == CBUFF_SIZE){
+        return 1;
+    }
+    else if(player == 0){
+        graczA[(outA+lenA)%CBUFF_SIZE] = card_nr;
+        lenA++;
+        return 0;
+    }
+    else
+    {
+        graczB[(outB+lenB)%CBUFF_SIZE] = card_nr;
+        lenB++;
+        return 0;
+    }
+}
+
+int steal(short player) {
+    int temp;
+//tutaj muse troche pozmaineiac
+
+    if(lenA == 0)
+    {
+        return -1;
+
+    }
+    else if(player==0){
+        temp = graczA[outA];
+        outA=(outA+1)%CBUFF_SIZE;
+        lenA--;
+        return temp;
+    }
+    else
+    {
+        temp = graczB[outB];
+        outB=(outB+1)%CBUFF_SIZE;
+        lenB--;
+        return temp;
+    }
+}
+
+
+
+int main() {
+    int deck[52];
+    int  limit, seed;
+    char mode;
+    scanf("%d %c %d",&seed,&mode,&limit);
+    srand(seed);
+    int konflikty=0;
+
+
+    rand_permutation(52,deck);
+
+
+
+    for(int i=0;i<26;i++){
+        add_card(deck[i], 0);
+        add_card(deck[i+26], 1);
+
+
+
+    }
+
+
+
+    int licznik, curroutA, curroutB, player,unplayer;
+
+    switch(mode) {
+        case '0':
+
+
+            while (limit > 0 && lenA > 0 && lenB > 0) {
+                
+                
+                 
+                licznik = 1;
+                curroutA = outA;
+                curroutB = outB;
+                konflikty = konflikty + 1;
+                limit--;
+                if (graczA[curroutA] / 4 == graczB[curroutB] / 4){
+                    if (lenA<3 || lenB<3){
+                        printf("1");
+                        printf("\n");
+                        printf("%d ",lenA);
+                        printf("%d",lenB);
+                    }
+                }
+                while (graczA[curroutA] / 4 == graczB[curroutB] / 4 && lenA > 0 && lenB > 0) {
+                    licznik += 2;
+                    curroutA = (curroutA + licznik - 1) % CBUFF_SIZE;
+                    curroutB = (curroutB + licznik - 1) % CBUFF_SIZE;
+                    konflikty = konflikty + 1;
+                    limit--;
+                    if (lenA == 0 || lenB == 0) {
+                        return 0;
+                        printf("tutuja ");
+                    }
+
+
+                }
+                if (lenA == 0 || lenB == 0) {
+
+                    return 3;
+                }
+
+
+                if (graczA[curroutA] / 4 > graczB[curroutB] / 4) {
+                    player = 0;
+                    unplayer = 1;
+
+                } else {
+                    player = 1;
+                    unplayer = 0;
+                }
+
+                for (int i = 0; i < licznik; i++) {
+
+                    add_card(steal(player), player);
+
+                }
+                for (int i = 0; i < licznik; i++) {
+
+                    add_card(steal(unplayer), player);
+
+
+                }
+
+
+            }
+            if (lenA == 0) {
+                printf("3");
+                printf("\n");
+                print_deck(1);
+
+
+            }
+            if (lenB == 0) {
+                printf("2");
+                printf("\n");
+                printf("%d ", konflikty);
+                printf("%d ", konflikty);
+
+
+            }
+
+
+            break;
+
+
+        case '1':
+            while (limit > 0 && lenA > 0 && lenB > 0) {
+
+                curroutA = outA;
+                curroutB = outB;
+                konflikty = konflikty + 1;
+
+                if (lenA == 0 || lenB == 0) {
+                    printf("3");
+                    return 3;
+                }
+
+                if (graczA[curroutA] / 4 > graczB[curroutB] / 4) {
+
+                    add_card(steal(0), 0);
+                    add_card(steal(1), 0);
+                    limit--;
+
+                } else if (graczA[curroutA] / 4 < graczB[curroutB] / 4) {
+
+                    add_card(steal(1), 1);
+                    add_card(steal(0), 1);
+                    limit--;
+
+                } else {
+
+                    add_card(steal(1), 1);
+                    add_card(steal(0), 0);
+                    limit--;
+                }
+            }
+            if (limit == 0) {
+                printf("0, %d\n", konflikty);
+                printf("A: %d\n", lenA);
+                printf("B: %d\n", lenB);
+            }
+            if (lenA == 0) {
+                printf("3\n");
+                printf("Wygral gracz B\n");
+                print_deck(1);
+
+            }
+            if (lenB == 0) {
+                printf("2\n");
+                printf("Wygral gracz A\n");
+                printf("%d", konflikty);
+
+
+            }
+            break;
+
+    }
+}
